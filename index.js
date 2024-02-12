@@ -25,10 +25,12 @@ async function transactionParser() {
   // Transaction version (first 4 bytes)
   let version = transactionBinary.readUInt32LE(offset);
 
+  console.log("Version:", version, "\n");
+
   // add 4 to offset to move to the next section of the transaction
   offset += 4;
 
-  // Check if it's a Taproot transaction
+  // Check if it's a Segwit transaction
   let segWitTxn = false;
   const marker = transactionBinary.readUInt8(offset);
   offset += 1;
@@ -40,8 +42,6 @@ async function transactionParser() {
     // reset move offset back to previous position
     offset -= 2;
   }
-
-  console.log("Version:", version, "\n");
 
   console.log("______Inputs________");
   // Number of inputs (variable length integer)
@@ -90,10 +90,6 @@ async function transactionParser() {
     console.log("Sequence:", input.sequence); // Logging sequence
     offset += 4;
 
-    if (segWitTxn) {
-      input.witness = "To be implemented...";
-    }
-
     inputs.push(input);
 
     // if not last item, log
@@ -140,7 +136,7 @@ async function transactionParser() {
     for (let i = 0; i < numInputs.value; ++i) {
       let numWitness = readVarInt(transactionBinary, offset);
       offset += numWitness.length;
-      const vector = [];
+      inputs[i].witness = [];
       for (let j = 0; j < numWitness.value; j++) {
         let witnessData;
         // Witness script length (variable length integer)
@@ -153,9 +149,8 @@ async function transactionParser() {
           .toString("hex");
         offset += witnessScript.value;
 
-        vector.push(witnessData);
+        inputs[i].witness.push(witnessData);
       }
-      inputs[i].witness = vector;
     }
   }
 
@@ -165,7 +160,7 @@ async function transactionParser() {
 
   console.log("Locktime:", locktime);
 
-  if (!segWitTxn && offset !== transactionBinary.length) {
+  if (offset !== transactionBinary.length) {
     throw new Error("Transaction has unexpected data");
   }
 }
