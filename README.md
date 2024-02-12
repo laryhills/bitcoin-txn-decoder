@@ -17,3 +17,11 @@ To use the script, simply run:
 ```bash
 node index.js
 ```
+
+# How It Works
+
+The `transaction_parser.js` script utilizes the `inquirer` library to prompt the user for input. It then parses the input hexadecimal string representing a Bitcoin transaction.
+
+- The script extracts the transaction version, inputs, outputs, scriptPubKey, sequence, and witness data (if applicable) from the transaction data.
+- It utilizes variable length integer encoding to parse the number of inputs and outputs.
+- For Segregated Witness transactions, it identifies and parses the witness data associated with each input.
