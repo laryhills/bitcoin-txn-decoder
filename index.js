@@ -43,7 +43,8 @@ async function transactionParser() {
     offset -= 2;
   }
 
-  console.log("______Inputs________");
+  segWitTxn && console.log("Segwit Transaction");
+
   // Number of inputs (variable length integer)
   let numInputs = readVarInt(transactionBinary, offset);
   // move offset past the variable length integer
@@ -54,7 +55,7 @@ async function transactionParser() {
   for (let i = 0; i < numInputs.value; i++) {
     let input = {};
 
-    console.log("Input", i + 1); // Logging input number
+    // console.log("Input", i + 1); // Logging input number
 
     // Previous transaction hash (32 bytes)
     // pick section of transactionBinary based on the offset
@@ -66,12 +67,12 @@ async function transactionParser() {
       .subarray(offset, offset + 32)
       .reverse()
       .toString("hex");
-    console.log("Hash:", input.prevTxHash); // Logging previous transaction hash
+    // console.log("Hash:", input.prevTxHash); // Logging previous transaction hash
     offset += 32;
 
     // Output index (4 bytes)
     input.outputIndex = transactionBinary.readUInt32LE(offset);
-    console.log("Index:", input.outputIndex); // Logging output index
+    // console.log("Index:", input.outputIndex); // Logging output index
     offset += 4;
 
     // Script length (variable length integer)
@@ -82,12 +83,12 @@ async function transactionParser() {
     input.scriptSig = transactionBinary
       .subarray(offset, offset + scriptLength.value)
       .toString("hex");
-    console.log("ScriptPubKey:", input.scriptSig); // Logging ScriptSig
+    // console.log("ScriptPubKey:", input.scriptSig); // Logging ScriptSig
     offset += scriptLength.value;
 
     // Sequence (4 bytes)
     input.sequence = transactionBinary.readUInt32LE(offset);
-    console.log("Sequence:", input.sequence); // Logging sequence
+    // console.log("Sequence:", input.sequence); // Logging sequence
     offset += 4;
 
     inputs.push(input);
@@ -96,7 +97,6 @@ async function transactionParser() {
     i + 1 !== numInputs.value && console.log("");
   }
 
-  console.log("______Outputs________");
   // Number of outputs (variable length integer)
   let numOutputs = readVarInt(transactionBinary, offset);
   offset += numOutputs.length; // Move offset past the variable length integer
@@ -106,13 +106,15 @@ async function transactionParser() {
   for (let i = 0; i < numOutputs.value; i++) {
     let output = {};
 
-    console.log("Output", i + 1); // Logging output number
+    // console.log("Output", i + 1); // Logging output number
 
     // Value (8 bytes)
     // The "n" suffix in JavaScript indicates that the number is a BigInt.
     // + converts to number
     output.value = Number(transactionBinary.readBigUInt64LE(offset));
-    console.log("Value:", output.value);
+    output.valueInBTC = output.value / 100000000;
+    output.valueInBTC = output.valueInBTC.toLocaleString("en-US", {}) + " BTC";
+    // console.log("Value:", output.value);
     offset += 8;
 
     // Script length (variable length integer)
@@ -123,7 +125,7 @@ async function transactionParser() {
     output.scriptPubKey = transactionBinary
       .subarray(offset, offset + scriptLength.value)
       .toString("hex");
-    console.log("ScriptPubKey:", output.scriptPubKey);
+    // console.log("ScriptPubKey:", output.scriptPubKey);
     offset += scriptLength.value;
 
     outputs.push(output);
@@ -152,17 +154,31 @@ async function transactionParser() {
         inputs[i].witness.push(witnessData);
       }
     }
+    /* console.log("______Witnesses______");
+    inputs.forEach((input, index) => {
+      console.log("Input", index + 1);
+      input.witness.forEach((witness, index) => {
+        console.log("Witness", index + 1, witness);
+      });
+    }); */
   }
 
   // Locktime (4 bytes)
   let locktime = transactionBinary.readUInt32LE(offset);
   offset += 4;
 
-  console.log("Locktime:", locktime);
-
   if (offset !== transactionBinary.length) {
     throw new Error("Transaction has unexpected data");
   }
+
+  // Log parsed inputs and outputs
+  console.log("Inputs :");
+  console.log(inputs);
+
+  console.log("\nOutputs :");
+  console.log(outputs);
+
+  console.log("\nLocktime:", locktime);
 }
 
 function readVarInt(buffer, offset) {
